@@ -1,147 +1,113 @@
-#include <stdio.h> // Include the standard I/O header file
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <signal.h>
 
+#define MAX_ARGS 10
+#define MAX_LENGTH 1000
 
-void chgDir(char* path, char* currDir){
-   if(chdir(path) == -1){
-      printf("Error: cannot change    directory\n");
-     return;
-   }
-  if( (getcwd(currDir,1000)) == NULL){
-     perror("getcwd() error");
-  }
-  setenv("pwd", currDir, 1);
-}
+// Function prototypes
+void chgDir(char* path, char* currDir);
+void showpid(int idList[]);
 
-void showpid(int idList[]){
-  int i = 0;
-  for(i=0; i<5; i++) {
-   printf("%d\n", idList[i]);
-  }
- return;
-}
+// Main function
+int main() {
+    char str[MAX_LENGTH], *tokenArr, *command, *argumentList[MAX_ARGS + 1];
+    char currDir[MAX_LENGTH];
+    int idList[5] = {0}; // Assuming you want to store 5 PIDs
+    int i, pid, status, execStatus, a = 0;
 
-int main() { 
-
-    if ( (getcwd(currDir, 1000)) == NULL){
+    // Initialize the current directory
+    if (getcwd(currDir, sizeof(currDir)) == NULL) {
+        perror("getcwd() error");
+        return 1;
     }
 
-    while (1)
-    {
-        //Get user input using fgets
+    while (1) {
+        printf("\033[0;31m%s$ ", currDir); // Print the prompt in red
+        printf("\033[0m"); // Reset color
 
-        printf("\033[0;31m%s$ ", currDir);
-        printf ("\033 [0m"); // Reset from red
-
-        if (fgets(str, 1000, stdin) != NULL){
-        //Do coding as needed
+        // Get user input using fgets
+        if (fgets(str, sizeof(str), stdin) == NULL) {
+            // Handle error or end of file
+            break;
         }
 
-        if (strncmp(str, "exit", 4) == 0 )
-        {
+        // Exit condition
+        if (strncmp(str, "exit", 4) == 0) {
             printf("EXITING! \n");
             break;
         }
-        //Do something with input
-    }
 
-    char* tokenArr; // token array
-    char* argumentList[10];
-    for(i=0; i<10; i++) // Malloc a char* pointer with length 81 and initialize it to null
-    argumentList[i] = (char*)malloc(sizeof(char)*81) ;
-    argumentList[i] = NULL;
-
-    while(1) {
-    //Get user input using fgets
-    if ( fgets(str, 1000, stdin) != NULL){
-    //Do coding as needed
-    }
-    //Using strtok to create tokens and count eac token as one word
-    tokenArr = strtok(str, " ");
-    i = 0;
-    while(tokenArr != NULL)
-    {
-    if(i == 0)
-        command = strdup (tokenArr);
-    }
-    argumentList [i] = strdup(tokenArr);
-    tokenArr = strtok(NULL, " ");
-    i++;
-    }
-    
-    while(1) {
-    // Get user input using fgets
-    if(fgets(str, 1000, stdin) != NULL) {
-        // Do coding as needed
-    }
-
-    // Using strtok to create tokens and count each token as one word
-    tokenArr = strtok(str, " ");
-    i = 0;
-    while(tokenArr != NULL) {
-        if(i == 0) {
-            command = strdup(tokenArr);
+        // Tokenize the input
+        tokenArr = strtok(str, " \n");
+        i = 0;
+        while (tokenArr != NULL) {
+            argumentList[i] = strdup(tokenArr);
+            tokenArr = strtok(NULL, " \n");
+            i++;
+            if (i >= MAX_ARGS) break; // Prevent buffer overflow
         }
-        argumentList[i] = strdup(tokenArr);
-        tokenArr = strtok(NULL, " ");
-        i++;
-    }
+        argumentList[i] = NULL; // NULL-terminate the argument list
+        command = argumentList[0]; // The first token is the command
 
-    if ((pid = fork()) == 0) {
-        execStatus = execvp(command, argumentList);
-
-        if(execStatus == -1) {
-            printf("Error: Command could not be executed\n");
-            exit(1);
-        }
-        kill(pid, SIGTERM);
-    } else {
-        // Parent process (your shell program itself)
-        waitpid(pid, &status, 0);
-    }
-}
-
-while(1) {
-    // Get user input using fgets
-    if (fgets(str, 1000, stdin) != NULL) {
-        // Do coding as needed
-    }
-
-    // Using strtok to create tokens and count each token as one word
-    tokenArr = strtok(str, " ");
-    i = 0;
-    while (tokenArr != NULL) {
-        if (i == 0) {
-            command = strdup(tokenArr);
-        }
-        argumentList[i] = strdup(tokenArr);
-        tokenArr = strtok(NULL, " ");
-        i++;
-    }
-    
-    // Handle the 'cd' and 'showpid' built-in commands
-    if (strcmp(command, "cd") == 0) {
-        chgDir(argumentList[1], currDir);
-    } else if (strcmp(command, "showpid") == 0) {
-        showpid(idList);
-    } else {
-        // Child process code goes here
-        if ((pid = fork()) == 0) {
-            // Child process
+        // Check for built-in commands
+        if (command == NULL) {
+            // No command entered
+            continue;
+        } else if (strcmp(command, "cd") == 0) {
+            chgDir(argumentList[1], currDir);
+        } else if (strcmp(command, "showpid") == 0) {
+            showpid(idList);
         } else {
-            // Parent process code goes here
-            if (a == 5) {
-                a = 0;
+            // External command
+            pid = fork();
+            if (pid == 0) {
+                // Child process
+                execStatus = execvp(command, argumentList);
+                if (execStatus == -1) {
+                    printf("Error: Command could not be executed\n");
+                    exit(1);
+                }
+            } else if (pid > 0) {
+                // Parent process
+                waitpid(pid, &status, 0);
+                if (a < 5) {
+                    idList[a++] = pid; // Store PID and increment 'a'
+                } else {
+                    a = 0; // Reset 'a' if it exceeds the list size
+                }
+            } else {
+                // Fork failed
+                perror("fork");
             }
-            idList[a] = pid;
-            a++;
-            waitpid(pid, status, 0);
+        }
+
+        // Free the duplicated strings
+        for (int j = 0; j < i; j++) {
+            free(argumentList[j]);
         }
     }
+    return 0;
 }
 
+// Function definitions
+void chgDir(char* path, char* currDir) {
+    if (chdir(path) == -1) {
+        printf("Error: cannot change directory\n");
+        return;
+    }
+    if (getcwd(currDir, MAX_LENGTH) == NULL) {
+        perror("getcwd() error");
+    }
+    setenv("PWD", currDir, 1);
+}
 
-
-
-
-
-        return 0;}
+void showpid(int idList[]) {
+    for (int i = 0; i < 5; i++) {
+        printf("%d\n", idList[i]);
+    }
+}

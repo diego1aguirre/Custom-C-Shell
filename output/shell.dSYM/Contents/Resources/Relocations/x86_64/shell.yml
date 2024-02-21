@@ -2,6 +2,8 @@
 triple:          'x86_64-apple-darwin'
 binary-path:     '/Users/diego1aguirre/Desktop/bestCodeProjects/courses/cs3733/project1/output/shell'
 relocations:
-  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003F60, symSize: 0x25 }
-  - { offsetInCU: 0x41, offset: 0x41, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003F60, symSize: 0x25 }
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003A50, symSize: 0x390 }
+  - { offsetInCU: 0x41, offset: 0x41, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003A50, symSize: 0x390 }
+  - { offsetInCU: 0x11D, offset: 0x11D, size: 0x8, addend: 0x0, symName: _chgDir, symObjAddr: 0x390, symBinAddr: 0x100003DE0, symSize: 0x80 }
+  - { offsetInCU: 0x14F, offset: 0x14F, size: 0x8, addend: 0x0, symName: _showpid, symObjAddr: 0x410, symBinAddr: 0x100003E60, symSize: 0x4A }
 ...
